@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | Local Face</title>
+    <meta name="description" content="Get in touch with the Local Face team for order help, fragrance advice or gifting enquiries.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="contact">
+
+    <!-- Header and footer are added by script.js -->
+
+    <main>
+        <div class="container">
+            <p class="breadcrumb"><a href="index.html">Home</a><span>/</span>Contact Us</p>
+
+            <h1 class="blog-title">Contact Us</h1>
+
+            <div class="contact-grid" style="padding-bottom: 100px">
+                <div class="contact-info">
+                    <h2>Get in touch</h2>
+                    <p class="lead">If you have any questions or need assistance, please do not hesitate to reach out to our friendly team.</p>
+                    <ul style="margin-top: 20px">
+                        <li><span>Email</span>hello@localface.example</li>
+                        <li><span>Phone</span>+00 0000 000 000</li>
+                        <li><span>Store</span>Your address here</li>
+                    </ul>
+                </div>
+
+                <form class="form" id="contactForm">
+                    <div class="form-row">
+                        <div class="field">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" required>
+                        </div>
+                        <div class="field">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="message">Message</label>
+                        <textarea id="message" required></textarea>
+                    </div>
+                    <button type="submit" class="btn">Send Message</button>
+                    <p class="form-success" id="formSuccess" hidden>Thank you! Your message has been noted.</p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

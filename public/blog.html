@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | Local Face</title>
+    <meta name="description" content="The Local Face perfumery blog - guides, history and stories from the world of fragrance.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="blog">
+
+    <!-- Header and footer are added by script.js -->
+
+    <main>
+        <div class="container">
+            <p class="breadcrumb"><a href="index.html">Home</a><span>/</span>Blog</p>
+
+            <h1 class="blog-title">Our Blog Collection</h1>
+
+            <!-- Intro -->
+            <div class="blog-intro">
+                <div>
+                    <h2>Discover the Art of Perfumery</h2>
+                    <p class="lead">Welcome to Local Face's Perfumery Blog Collection! Here, we invite you to immerse yourself in the captivating world of fragrances, where each blog post is a sensory journey that unveils the magic and allure of perfumes. Our team of fragrance enthusiasts, industry experts, and perfumers have curated an array of captivating articles to enrich your understanding and appreciation for these olfactory delights.</p>
+                    <p class="lead">At Local Face, we believe that perfumery is an extraordinary fusion of art, science, and emotion. Our passion for exquisite fragrances has inspired us to curate a treasure trove of blog posts, each designed to ignite your senses and deepen your appreciation for these olfactory wonders.</p>
+                </div>
+                <div class="collage">
+                    <div class="top">
+                        <img src="images/blog-collage-1.jpg" alt="Pink perfume bottle among flowers">
+                        <img src="images/blog-collage-2.jpg" alt="Perfumer at work in an ancient workshop">
+                    </div>
+                    <div class="bottom">
+                        <img src="images/blog-collage-3.jpg" alt="Row of pink and gold perfume bottles">
+                        <img src="images/blog-collage-4.jpg" alt="Perfume bottle with blossoms">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and filters -->
+            <div class="blog-tools">
+                <form class="blog-search" id="blogSearchForm">
+                    <input type="search" id="blogSearch" placeholder="Search here" aria-label="Search articles">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+                </form>
+                <select id="blogCategory" class="push" aria-label="Filter by category"><option value="">Filter by Category</option></select>
+                <select id="blogSort" aria-label="Sort by">
+                    <option value="">Sort by</option>
+                    <option value="new">Newest first</option>
+                    <option value="old">Oldest first</option>
+                    <option value="title">Title: A to Z</option>
+                </select>
+            </div>
+
+            <div class="blog-grid" id="blogGrid"></div>
+
+            <p class="center" style="padding-bottom: 70px"><button class="btn btn-wide" id="loadPosts">Load More</button></p>
+        </div>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

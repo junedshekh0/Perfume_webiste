@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop | Local Face</title>
+    <meta name="description" content="Shop the best selling luxury perfumes from Local Face, plus limited time special offers.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="shop">
+
+    <!-- Header and footer are added by script.js -->
+
+    <main>
+        <div class="container">
+            <p class="breadcrumb"><a href="index.html">Home</a><span>/</span>Products</p>
+
+            <h1 class="shop-title" id="shopTitle">Best Selling Products</h1>
+
+            <div class="shop-toolbar">
+                <span class="label">Filter by</span>
+                <select id="filterCollection" aria-label="Filter by collection"><option value="">Collections</option></select>
+                <select id="filterFamily" aria-label="Filter by fragrance family"><option value="">Fragrance Families</option></select>
+                <select id="filterGender" aria-label="Filter by gender"><option value="">Gender</option></select>
+                <select id="filterOccasion" aria-label="Filter by occasion"><option value="">Occasions</option></select>
+                <select id="sortBy" class="push" aria-label="Sort by">
+                    <option value="">Sort by</option>
+                    <option value="low">Price: low to high</option>
+                    <option value="high">Price: high to low</option>
+                    <option value="rating">Top rated</option>
+                    <option value="name">Name: A to Z</option>
+                </select>
+            </div>
+
+            <div class="shop-grid" id="shopGrid"></div>
+
+            <div class="pagination">
+                <button id="pagePrev" aria-label="Previous page"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+                <span id="pageInfo"></span>
+                <button id="pageNext" aria-label="Next page"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+            </div>
+        </div>
+
+        <!-- Special offers -->
+        <section class="section">
+            <h2 class="section-title white">Special Offers</h2>
+            <div id="offers"></div>
+        </section>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

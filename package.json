@@ -1,0 +1,17 @@
+{
+  "name": "local-face-perfumes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Face perfume store - Express + SQLite backend with a static frontend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "reset-admin": "node server.js --reset-admin"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

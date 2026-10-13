@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Admin | Local Face</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="admin">
+
+    <!-- Header and footer are added by script.js; everything else is built by admin.js -->
+
+    <main>
+        <div class="container page-body">
+            <p class="breadcrumb"><a href="index.html">Home</a><span>/</span>Admin</p>
+            <h1 class="blog-title">Admin Panel</h1>
+
+            <div id="adminGate" class="empty-state" hidden></div>
+
+            <div id="adminPanel" hidden>
+                <div class="stat-grid" id="adminStats"></div>
+
+                <div class="tabs" id="adminTabs">
+                    <button data-tab="orders" class="active">Orders</button>
+                    <button data-tab="products">Products</button>
+                    <button data-tab="messages">Messages</button>
+                    <button data-tab="subscribers">Subscribers</button>
+                </div>
+
+                <section id="tab-orders"></section>
+
+                <section id="tab-products" hidden>
+                    <form class="form" id="productForm">
+                        <h2 id="productFormTitle">Add Product</h2>
+                        <div class="form-row">
+                            <div class="field"><label for="pName">Name</label><input type="text" id="pName" minlength="2" maxlength="80" required></div>
+                            <div class="field"><label for="pPrice">Price for 100 ml ($)</label><input type="number" id="pPrice" min="1" step="0.01" required></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field">
+                                <label for="pImage">Image file (inside public/images)</label>
+                                <input type="text" id="pImage" placeholder="p-luxurious-elixir.jpg" required>
+                            </div>
+                            <div class="field">
+                                <label for="pUpload">...or upload a new image (JPG, PNG, WebP, max 5 MB)</label>
+                                <input type="file" id="pUpload" accept="image/jpeg,image/png,image/webp">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field"><label for="pCollection">Collection</label><select id="pCollection"></select></div>
+                            <div class="field"><label for="pFamily">Fragrance family</label><select id="pFamily"></select></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="field"><label for="pGender">Gender</label><select id="pGender"></select></div>
+                            <div class="field"><label for="pOccasion">Occasion</label><select id="pOccasion"></select></div>
+                        </div>
+                        <label class="check"><input type="checkbox" id="pBestseller"> Show in best sellers</label>
+                        <div class="form-actions">
+                            <button type="submit" class="btn" id="productSubmit">Add Product</button>
+                            <button type="button" class="btn btn-outline" id="productCancel" hidden>Cancel</button>
+                        </div>
+                    </form>
+                    <div class="table-wrap" id="productTable"></div>
+                </section>
+
+                <section id="tab-messages" hidden></section>
+                <section id="tab-subscribers" hidden></section>
+            </div>
+        </div>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

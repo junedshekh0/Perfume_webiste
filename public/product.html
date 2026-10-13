@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfume | Local Face</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="shop">
+
+    <!-- Header and footer are added by script.js; the product is filled in from ?id= -->
+
+    <main>
+        <div class="container">
+            <p class="breadcrumb"><a href="index.html">Home</a><span>/</span><a href="shop.html">Products</a><span>/</span><span id="crumbName"></span></p>
+
+            <div class="product-detail" id="productDetail"></div>
+
+            <div id="productMore">
+                <div id="productSections"></div>
+
+                <!-- Reviews -->
+                <section class="section" id="reviews">
+                    <h2 class="section-title">Reviews</h2>
+                    <div class="review-summary" id="reviewSummary"></div>
+                    <form class="form review-form" id="reviewForm" hidden>
+                        <h3>Write a Review</h3>
+                        <div class="field">
+                            <label for="reviewRating">Rating</label>
+                            <select id="reviewRating">
+                                <option value="5">5 stars</option>
+                                <option value="4">4 stars</option>
+                                <option value="3">3 stars</option>
+                                <option value="2">2 stars</option>
+                                <option value="1">1 star</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="reviewText">Your review</label>
+                            <textarea id="reviewText" minlength="10" maxlength="1500" required></textarea>
+                        </div>
+                        <button type="submit" class="btn">Submit Review</button>
+                    </form>
+                    <div id="reviewList"></div>
+                    <p class="center"><button class="btn btn-outline btn-wide" id="loadReviews">Load More</button></p>
+                </section>
+
+                <!-- Discover more -->
+                <section class="section">
+                    <h2 class="section-title">Discover More</h2>
+                    <div class="carousel" id="discoverMore"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
