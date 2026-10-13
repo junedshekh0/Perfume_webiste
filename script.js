@@ -70,27 +70,290 @@ function showToast(message) {
 }
 
 function formatDate(value) {
-    // The database stores UTC times as "YYYY-MM-DD HH:MM:SS".
-    const iso = /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(value) ? value.replace(' ', 'T') + 'Z' : value;
-    return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
+    return new Date(value).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
 }
 
-// Calls the backend. Throws an Error whose message is safe to show to the visitor.
-async function api(path, { method = 'GET', body } = {}) {
-    let res;
+/* ---------- Local data store ---------- */
+
+// The site has no server. Accounts, orders, reviews, messages and admin changes are kept in
+// this browser's localStorage, so they are only visible in the browser they were made in.
+// Anyone can read this file, so the admin sign-in below is a convenience, not real security.
+
+const DB_KEY = 'localface_db';
+const SESSION_KEY = 'localface_session';
+const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+const DEFAULT_ADMIN = { name: 'Admin', email: 'admin@localface.local', password: 'admin12345' };
+
+const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+
+async function hashPassword(password, salt) {
+    return hex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + password))));
+}
+
+async function newUser(db, name, email, password, role) {
+    const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
+    const user = { id: db.users.length + 1, name, email, salt, hash: await hashPassword(password, salt), role };
+    db.users.push(user);
+    return user;
+}
+
+function saveDb(db) {
     try {
-        res = await fetch(path, {
-            method,
-            credentials: 'same-origin',
-            headers: body ? { 'Content-Type': 'application/json' } : undefined,
-            body: body ? JSON.stringify(body) : undefined
-        });
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
     } catch (e) {
-        throw new Error('Cannot reach the server. Please make sure it is running.');
+        throw new Error('Could not save. Browser storage is full or blocked.');
     }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
-    return data;
+}
+
+// Opens the store, creating it from the starter lists in data.js on the first visit.
+async function loadDb() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(DB_KEY));
+        if (saved && Array.isArray(saved.products)) return saved;
+    } catch (e) {
+        // Unreadable storage is rebuilt below.
+    }
+
+    const db = {
+        users: [],
+        products: PRODUCTS.map(p => ({ ...p, bestseller: Boolean(p.bestseller), active: true })),
+        reviews: [],
+        orders: [],
+        messages: [],
+        subscribers: []
+    };
+    await newUser(db, DEFAULT_ADMIN.name, DEFAULT_ADMIN.email, DEFAULT_ADMIN.password, 'admin');
+    for (const p of db.products) {
+        for (const r of REVIEWS) {
+            db.reviews.push({ productId: p.id, userId: null, name: r.name, rating: 5, text: r.text, date: new Date(r.date + ' UTC').toISOString() });
+        }
+    }
+    try {
+        saveDb(db);
+    } catch (e) {
+        // Storage can be blocked (private mode); the starter data still works for this visit.
+    }
+    return db;
+}
+
+function cleanText(value, label, { min = 1, max = 200 } = {}) {
+    const clean = typeof value === 'string' ? value.trim() : '';
+    if (clean.length < min) throw new Error(`${label} is required.`);
+    if (clean.length > max) throw new Error(`${label} is too long.`);
+    return clean;
+}
+
+function cleanEmail(value) {
+    const clean = cleanText(value, 'Email', { max: 254 }).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Please enter a valid email address.');
+    return clean;
+}
+
+// Used for values that are shown as HTML in the store (product names, filter labels).
+function cleanLabel(value, label, options) {
+    const clean = cleanText(value, label, options);
+    if (/[<>"]/.test(clean)) throw new Error(`${label} contains characters that are not allowed.`);
+    return clean;
+}
+
+function productInput(body) {
+    const price = Number(body.price);
+    if (!Number.isFinite(price) || price <= 0 || price > 100000) throw new Error('Please enter a valid price.');
+
+    const image = cleanText(body.image, 'Image', { max: 120 });
+    if (!/^[\w-]+(\/[\w-]+)*\.(jpe?g|png|webp)$/i.test(image)) throw new Error('Image must be a file name inside the images folder.');
+
+    const optional = (value, label) => (value ? cleanLabel(value, label, { max: 60 }) : '');
+    return {
+        name: cleanLabel(body.name, 'Name', { min: 2, max: 80 }),
+        price: Math.round(price * 100) / 100,
+        image,
+        collection: optional(body.collection, 'Collection'),
+        family: optional(body.family, 'Fragrance family'),
+        gender: optional(body.gender, 'Gender'),
+        occasion: optional(body.occasion, 'Occasion'),
+        bestseller: Boolean(body.bestseller)
+    };
+}
+
+const publicUser = u => ({ id: u.id, name: u.name, email: u.email, role: u.role });
+const publicProduct = ({ active, ...p }) => ({ ...p, rating: Math.round(p.rating * 2) / 2 });
+
+function activeProduct(db, id) {
+    const product = db.products.find(p => p.id === id && p.active);
+    if (!product) throw new Error('Product not found.');
+    return product;
+}
+
+function signedIn(user) {
+    if (!user) throw new Error('Please sign in first.');
+    return user;
+}
+
+// Each route is [method, path pattern, handler]. Handlers get { db, user, body } followed by
+// the values captured from the path, and may throw an Error to show to the visitor.
+const ROUTES = [
+    ['GET', /^\/api\/products$/, ({ db }) => db.products.filter(p => p.active).map(publicProduct)],
+
+    ['GET', /^\/api\/products\/([^/]+)\/reviews$/, ({ db }, id) => {
+        const product = activeProduct(db, id);
+        const reviews = db.reviews.filter(r => r.productId === id).sort((a, b) => b.date.localeCompare(a.date));
+        const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        for (const r of reviews) breakdown[r.rating]++;
+        return { reviews, breakdown, total: product.reviews, rating: Math.round(product.rating * 10) / 10 };
+    }],
+
+    ['POST', /^\/api\/products\/([^/]+)\/reviews$/, ({ db, user, body }, id) => {
+        signedIn(user);
+        const product = activeProduct(db, id);
+        const rating = Number(body.rating);
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new Error('Please choose a rating from 1 to 5.');
+        const text = cleanText(body.text, 'Review', { min: 10, max: 1500 });
+        if (db.reviews.some(r => r.productId === id && r.userId === user.id)) throw new Error('You have already reviewed this perfume.');
+
+        db.reviews.push({ productId: id, userId: user.id, name: user.name, rating, text, date: new Date().toISOString() });
+        // Fold the new rating into the product's running average.
+        product.rating = (product.rating * product.reviews + rating) / (product.reviews + 1);
+        product.reviews++;
+    }],
+
+    ['POST', /^\/api\/auth\/register$/, async ({ db, body }) => {
+        const name = cleanText(body.name, 'Name', { min: 2, max: 80 });
+        const email = cleanEmail(body.email);
+        const password = typeof body.password === 'string' ? body.password : '';
+        if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+        if (password.length > 200) throw new Error('Password is too long.');
+        if (db.users.some(u => u.email === email)) throw new Error('An account with this email already exists.');
+
+        const user = await newUser(db, name, email, password, 'customer');
+        localStorage.setItem(SESSION_KEY, user.id);
+        return { user: publicUser(user) };
+    }],
+
+    ['POST', /^\/api\/auth\/login$/, async ({ db, body }) => {
+        const email = cleanEmail(body.email);
+        const user = db.users.find(u => u.email === email);
+        if (!user || user.hash !== await hashPassword(String(body.password), user.salt)) throw new Error('Incorrect email or password.');
+        localStorage.setItem(SESSION_KEY, user.id);
+        return { user: publicUser(user) };
+    }],
+
+    ['POST', /^\/api\/auth\/logout$/, () => localStorage.removeItem(SESSION_KEY)],
+
+    ['GET', /^\/api\/auth\/me$/, ({ user }) => ({ user: user ? publicUser(user) : null })],
+
+    ['POST', /^\/api\/orders$/, ({ db, user, body }) => {
+        const c = body.customer || {};
+        const customer = {
+            name: cleanText(c.name, 'Name', { min: 2, max: 80 }),
+            email: cleanEmail(c.email),
+            phone: cleanText(c.phone, 'Phone', { min: 6, max: 30 }),
+            address: cleanText(c.address, 'Address', { min: 5, max: 300 }),
+            city: cleanText(c.city, 'City', { max: 80 }),
+            postal_code: cleanText(c.postalCode, 'Postal code', { max: 20 })
+        };
+        if (!/^[+\d][\d\s()-]+$/.test(customer.phone)) throw new Error('Please enter a valid phone number.');
+        if (!Array.isArray(body.items) || body.items.length === 0) throw new Error('Your bag is empty.');
+
+        // Prices always come from the product list, never from the saved bag.
+        const items = body.items.map(item => {
+            const product = activeProduct(db, item.id);
+            const size = Number(item.size);
+            const qty = Number(item.qty);
+            if (!SIZES.includes(size)) throw new Error(`Size is not available for ${product.name}.`);
+            if (!Number.isInteger(qty) || qty < 1 || qty > 10) throw new Error(`Quantity for ${product.name} must be between 1 and 10.`);
+            return { id: product.id, name: product.name, size, qty, price: priceFor(product, size) };
+        });
+        const order = {
+            id: db.orders.length + 1,
+            userId: user ? user.id : null,
+            ...customer,
+            total: items.reduce((sum, i) => sum + i.price * i.qty, 0),
+            status: 'pending',
+            date: new Date().toISOString(),
+            items
+        };
+        db.orders.push(order);
+        return { order };
+    }],
+
+    ['GET', /^\/api\/orders\/mine$/, ({ db, user }) => {
+        signedIn(user);
+        return db.orders.filter(o => o.userId === user.id).reverse();
+    }],
+
+    ['POST', /^\/api\/newsletter$/, ({ db, body }) => {
+        const email = cleanEmail(body.email);
+        if (!db.subscribers.some(s => s.email === email)) db.subscribers.push({ email, date: new Date().toISOString() });
+    }],
+
+    ['POST', /^\/api\/contact$/, ({ db, body }) => {
+        db.messages.push({
+            name: cleanText(body.name, 'Name', { min: 2, max: 80 }),
+            email: cleanEmail(body.email),
+            message: cleanText(body.message, 'Message', { min: 5, max: 3000 }),
+            date: new Date().toISOString()
+        });
+    }],
+
+    ['GET', /^\/api\/admin\/summary$/, ({ db }) => ({
+        orders: db.orders.length,
+        pending: db.orders.filter(o => o.status === 'pending').length,
+        revenue: db.orders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + o.total, 0),
+        products: db.products.filter(p => p.active).length,
+        customers: db.users.filter(u => u.role === 'customer').length,
+        subscribers: db.subscribers.length,
+        messages: db.messages.length
+    })],
+
+    ['GET', /^\/api\/admin\/orders$/, ({ db }) => [...db.orders].reverse()],
+
+    ['PATCH', /^\/api\/admin\/orders\/(\d+)$/, ({ db, body }, id) => {
+        if (!ORDER_STATUSES.includes(body.status)) throw new Error('Unknown order status.');
+        const order = db.orders.find(o => o.id === Number(id));
+        if (!order) throw new Error('Order not found.');
+        order.status = body.status;
+    }],
+
+    ['GET', /^\/api\/admin\/messages$/, ({ db }) => [...db.messages].reverse()],
+
+    ['GET', /^\/api\/admin\/subscribers$/, ({ db }) => [...db.subscribers].reverse()],
+
+    ['POST', /^\/api\/admin\/products$/, ({ db, body }) => {
+        const p = productInput(body);
+        const base = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'perfume';
+        let id = base;
+        for (let n = 2; db.products.some(x => x.id === id); n++) id = `${base}-${n}`;
+        db.products.push({ id, ...p, rating: 0, reviews: 0, active: true });
+        return { id };
+    }],
+
+    ['PUT', /^\/api\/admin\/products\/([^/]+)$/, ({ db, body }, id) => {
+        Object.assign(activeProduct(db, id), productInput(body));
+    }],
+
+    // Products are hidden rather than deleted so past orders and reviews keep working.
+    ['DELETE', /^\/api\/admin\/products\/([^/]+)$/, ({ db }, id) => {
+        activeProduct(db, id).active = false;
+    }]
+];
+
+// Runs a request against the local store. Throws an Error whose message is safe to show to the visitor.
+async function api(path, { method = 'GET', body = {} } = {}) {
+    const db = await loadDb();
+    const user = db.users.find(u => String(u.id) === localStorage.getItem(SESSION_KEY)) || null;
+
+    if (path.startsWith('/api/admin/')) {
+        if (signedIn(user).role !== 'admin') throw new Error('Admin access only.');
+    }
+    for (const [routeMethod, pattern, handler] of ROUTES) {
+        const match = method === routeMethod && pattern.exec(path);
+        if (!match) continue;
+        const result = await handler({ db, user, body }, ...match.slice(1).map(decodeURIComponent));
+        if (method !== 'GET') saveDb(db);
+        return result === undefined ? { ok: true } : result;
+    }
+    throw new Error('Not found.');
 }
 
 // The signed-in user (or null), loaded once when the page starts.
@@ -586,7 +849,7 @@ async function initReviews(p) {
         try {
             data = await api(`/api/products/${p.id}/reviews`);
         } catch (err) {
-            // No server: show the starter reviews from data.js.
+            // The store could not be opened: show the starter reviews from data.js.
             const reviews = REVIEWS.map(r => ({ ...r, rating: 5, date: new Date(r.date + ' UTC').toISOString() }));
             data = { reviews, breakdown: { 5: reviews.length, 4: 0, 3: 0, 2: 0, 1: 0 }, total: p.reviews, rating: p.rating };
         }
@@ -959,8 +1222,8 @@ function initCheckout() {
 document.addEventListener('DOMContentLoaded', async () => {
     buildLayout();
 
-    // Products and the signed-in user come from the server; without it the page
-    // still works from the starter list in data.js.
+    // Products and the signed-in user come from the local store; if it cannot be
+    // opened the page still works from the starter list in data.js.
     const [products, me] = await Promise.all([
         api('/api/products').catch(() => null),
         api('/api/auth/me').catch(() => null)

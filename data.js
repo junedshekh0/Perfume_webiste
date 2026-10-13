@@ -1,8 +1,8 @@
 // Site content. Collections, services, offers and blog posts are read straight from here.
 //
-// PRODUCTS and REVIEWS are only the starting data: the server copies them into its database
-// the first time it runs, and after that products are managed from the admin panel. They are
-// also what the pages fall back to if the server cannot be reached.
+// PRODUCTS and REVIEWS are only the starting data: script.js copies them into the browser's
+// localStorage on the first visit, and after that products are managed from the admin panel.
+// They are also what the pages fall back to if localStorage cannot be used.
 // `price` is for the 100 ml bottle; the 150 ml price is worked out from it.
 
 const COLLECTIONS = [

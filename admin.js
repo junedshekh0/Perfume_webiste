@@ -1,7 +1,6 @@
 // Admin panel. Runs after script.js has loaded the signed-in user (the "site:ready" event).
 // Everything typed by customers is passed through escapeHTML before it is shown.
 
-const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 let editingId = null;
 let adminProducts = [];
 
@@ -113,26 +112,6 @@ function initProductForm() {
     options('#pFamily', same(FAMILIES));
     options('#pGender', same(GENDERS));
     options('#pOccasion', same(OCCASIONS));
-
-    $('#pUpload').addEventListener('change', async e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        try {
-            const res = await fetch('/api/admin/upload', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': file.type },
-                body: file
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || 'Upload failed.');
-            $('#pImage').value = data.image;
-            showToast('Image uploaded.');
-        } catch (err) {
-            showToast(err.message);
-        }
-        e.target.value = '';
-    });
 
     $('#productForm').addEventListener('submit', async e => {
         e.preventDefault();
